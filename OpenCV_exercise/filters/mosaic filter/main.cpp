@@ -2,11 +2,10 @@
 #include <iostream>
 #include <stdio.h>
 
-cv::Mat src = cv::imread("img/test2.png"); //ì«Ç›çûÇ›
-cv::Mat org = src.clone();
-
-int main()
+void mosaic_filter(cv::Mat &src)
 {
+	cv::Mat org = src.clone();
+	   
 	int kernel_size, K_h, K_w;
 	std::cout << "Input the kernel size.\n";
 	std::cin >> kernel_size;
@@ -42,8 +41,16 @@ int main()
 			}
 		}
 	}
+}
 
-	imshow("result", src);	imshow("original", org);
+int main()
+{
+	cv::Mat src = cv::imread("img/test.png");
+	cv::Mat before_filtering_image = src.clone();
+		
+	mosaic_filter(src);
+
+	imshow("result", src);	imshow("original", before_filtering_image);
 	cv::waitKey(0);
 
 	return 0;

@@ -4,9 +4,31 @@
 #include <vector>
 #include <cmath>
 
-void gaussian_filter()
+//正規化ガウス関数の用意
+std::vector<double> gaussian_value_vec(double sigma, int kernel_size)
 {
-	int kernel_size, horizontal_distance, vertical_distance;
+	std::vector<double> gaussian_value_vec;
+	double total_gaussian_value = 0.0;
+	for (int y = -(kernel_size - 1) / 2; y < (kernel_size + 1) / 2; y++)
+	{
+		for (int x = -(kernel_size - 1) / 2; x < (kernel_size + 1) / 2; x++)
+		{
+			gaussian_value_vec.emplace_back(exp(-(x * x + y * y) / (2 * sigma * sigma)));
+			total_gaussian_value += exp(-(x * x + y * y) / (2 * sigma * sigma));
+		}
+	}
+	for (int index_of_gaussian_value_vec = 0; index_of_gaussian_value_vec < kernel_size * kernel_size; index_of_gaussian_value_vec++)
+	{
+		gaussian_value_vec[index_of_gaussian_value_vec] = gaussian_value_vec[index_of_gaussian_value_vec] / total_gaussian_value;
+	}
+
+	return gaussian_value_vec;
+}
+
+
+void gaussian_filter(cv::Mat &src)
+{
+	int kernel_size;
 	double variance;
 
 	//カーネルサイズの入力
@@ -27,47 +49,68 @@ void gaussian_filter()
 		std::cin >> variance;
 	}
 
-	//画素ごとの非正規化ガウス関数の計算
-	std::vector<uchar> gaussian_vector;
-	double gaussian = exp(-(horizontal_distance * horizontal_distance + vertical_distance * vertical_distance) / (2 * variance * variance));
+	int width = src.cols;
+	int height = src.rows;
+	int channels = src.channels();
+	std::vector<double> gaussian_kernel = gaussian_value_vec(variance, kernel_size);
 
 
-}
 
-int main()
-{
-	//読み込みと複製
-	cv::Mat src = cv::imread("img/test.png");
-	cv::Mat org = src.clone();
+	//ゼロパディング（ゼロの用意）
+	cv::Mat zero_padded_src = cv::Mat::zeros(cv::Size(width + kernel_size - 1, height + kernel_size - 1), CV_8U);
 
-	int width = org.cols;
-	int height = org.rows;
-	int channels = org.channels();
-
+	//ゼロパディング（元画像をのせる）
 	for (int c = 0; c < channels; c++) //チャンネル指定
 	{
-		for (int b = (kernel_size - 1) / 2; b < height - (kernel_size - 1) / 2; b++) //出力画素の高さ位置指定
+		for (int b = (kernel_size - 1) / 2; b < height + (kernel_size - 1) / 2; b++) //縦方向
 		{
-			for (int a = (kernel_size - 1) / 2; a < width - (kernel_size - 1) / 2; a++) //出力画素の幅位置指定
+			for (int a = (kernel_size - 1) / 2; a < width + (kernel_size - 1) / 2; a++) //横方向
 			{
-				//フィルタ内の画素値の中央値を計算
-				std::vector<uchar> element;
-				for (int j = -(kernel_size - 1) / 2; j < (kernel_size + 1) / 2; j++) //モザイク計算画素の高さ位置指定
+				zero_padded_src.data[(a + b * zero_padded_src.cols) * channels + c] = src.data[((a - (kernel_size - 1) / 2) + (b - (kernel_size - 1) / 2) * width) * channels + c];
+			}
+		}
+	}
+
+	//ゼロパディング後画像の複製
+	cv::Mat zero_padded_org = zero_padded_src.clone();
+	
+	//フィルタリング実行
+	for (int c = 0; c < channels; c++) //チャンネル指定
+	{
+		for (int b = (kernel_size - 1) / 2; b < height + (kernel_size - 1) / 2; b++) //出力画素の高さ位置指定
+		{
+			for (int a = (kernel_size - 1) / 2; a < width + (kernel_size - 1) / 2; a++) //出力画素の幅位置指定
+			{
+				//画素値計算
+				double tmpValue = 0.0;
+				for (int j = -(kernel_size - 1) / 2; j < (kernel_size + 1) / 2; j++) //ガウシアン計算画素の高さ位置指定
 				{
-					for (int i = -(kernel_size - 1) / 2; i < (kernel_size + 1) / 2; i++) //モザイク計算画素の幅位置指定
+					for (int i = -(kernel_size - 1) / 2; i < (kernel_size + 1) / 2; i++) //ガウシアン計算画素の幅位置指定
 					{
-						element.emplace_back(org.data[((i + a) + (j + b) * width) * channels + c]);
+						//ここから要検討
+						tmpValue += gaussian_value_vec();
+						zero_padded_src.emplace_back(org.data[((i + a) + (j + b) * width) * channels + c]);
 					}
 				}
-				std::sort(element.begin(), element.end());
-				src.data[(a + b * width) * channels + c] = element[(kernel_size * kernel_size - 1) / 2];
+				src.data[(a + b * width) * channels + c] = tmpValue;
 			}
 		}
 		std::cout << "channel " << c << " is done.\n";
 	}
+}
 
+int main()
+{
+	//入力と複製
+	cv::Mat src = cv::imread("img/test.png");
+	cv::Mat before_filtering_image = src.clone();
+
+	//フィルタ処理
+	gaussian_filter(src);
+
+	//出力と比較
 	imshow("result", src);
-	imshow("original", org);
+	imshow("original", before_filtering_image);
 	cv::waitKey(0);
 
 	return 0;
