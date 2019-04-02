@@ -83,18 +83,21 @@ int main()
 //				K_w = std::min(kernel_size, width - present_w);
 //				for (int b = 0; b < K_h; b++) //出力画素の高さ位置指定
 //				{
+//					cv::Vec3b *pointer_of_src = src.ptr<cv::Vec3b>(present_h + b);
 //					for (int a = 0; a < K_w; a++) //出力画素の幅位置指定
 //					{
 //						//フィルタ内の画素値の平均を計算
 //						double tmpValue = 0.0; //画素値計算用変数						
 //						for (int j = 0; j < K_h; j++) //モザイク計算画素の高さ位置指定
 //						{
+//							cv::Vec3b *pointer_of_org = org.ptr<cv::Vec3b>(j);
 //							for (int i = 0; i < K_w; i++) //モザイク計算画素の幅位置指定
 //							{
-//								tmpValue += (double)org.data[((present_w + i) + (present_h + j) * width) * channels + c] / (K_w * K_h);
+//								tmpValue += (double)(*pointer_of_org)[c] / (K_w * K_h);
+//								*
 //							}
 //						}
-//						src.data[((present_w + a) + (present_h + b) * width) * channels + c] = (unsigned char)tmpValue;
+//						*pointer_of_src[((present_w + a) + (present_h + b) * width) * channels + c] = (unsigned char)tmpValue;
 //					}
 //				}
 //			}
