@@ -53,11 +53,9 @@ void gaussian_filter(cv::Mat &src)
 	int height = src.rows;
 	int channels = src.channels();
 	std::vector<double> gaussian_kernel = gaussian_value_vec(variance, kernel_size);
-
-
-
+	   
 	//ゼロパディング（ゼロの用意）
-	cv::Mat zero_padded_src = cv::Mat::zeros(cv::Size(width + kernel_size - 1, height + kernel_size - 1), CV_8U);
+	cv::Mat zero_padded_src = cv::Mat::zeros(cv::Size(width + kernel_size - 1, height + kernel_size - 1), CV_8UC3);
 
 	//ゼロパディング（元画像をのせる）
 	for (int c = 0; c < channels; c++) //チャンネル指定
@@ -68,7 +66,7 @@ void gaussian_filter(cv::Mat &src)
 			{
 				zero_padded_src.data[(a + b * zero_padded_src.cols) * channels + c] = src.data[((a - (kernel_size - 1) / 2) + (b - (kernel_size - 1) / 2) * width) * channels + c];
 			}
-		}
+		}	
 	}
 
 	//ゼロパディング後画像の複製
@@ -87,16 +85,27 @@ void gaussian_filter(cv::Mat &src)
 				{
 					for (int i = -(kernel_size - 1) / 2; i < (kernel_size + 1) / 2; i++) //ガウシアン計算画素の幅位置指定
 					{
-						//ここから要検討
-						tmpValue += gaussian_value_vec();
-						zero_padded_src.emplace_back(org.data[((i + a) + (j + b) * width) * channels + c]);
+						//ここから要検討						
+						tmpValue += zero_padded_org.data[((a + i) + (b + j) * zero_padded_src.cols) * channels + c] * gaussian_kernel[(i + (kernel_size - 1) / 2) + (j + (kernel_size - 1) / 2) * kernel_size];
 					}
 				}
-				src.data[(a + b * width) * channels + c] = tmpValue;
+				zero_padded_src.data[(a + b * zero_padded_src.cols) * channels + c] = tmpValue;
 			}
 		}
-		std::cout << "channel " << c << " is done.\n";
+		std::cout << "step " << c + 1 << " is done (total step is " << channels << ").\n";
 	}
+
+	//パディング部分の削除と出力ファイルへの書き出し
+	for (int c = 0; c < channels; c++) //チャンネル指定
+	{
+		for (int b = 0; b < height; b++) //縦方向
+		{
+			for (int a = 0; a < width; a++) //横方向
+			{
+				src.data[(a + b * width) * channels + c] = zero_padded_src.data[((a + (kernel_size - 1) / 2) + (b + (kernel_size - 1) / 2) * zero_padded_src.cols) * channels + c];
+			}
+		}
+	}	
 }
 
 int main()

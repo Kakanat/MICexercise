@@ -56,12 +56,15 @@ int main()
 	return 0;
 }
 
+////with pointer 
 //#include <opencv2/opencv.hpp>
 //#include <iostream>
 //#include <stdio.h>
 //
-//void mosaicFilter(cv::Mat image)
+//void mosaic_filter(cv::Mat &src)
 //{
+//	cv::Mat org = src.clone();
+//
 //	int kernel_size, K_h, K_w;
 //	std::cout << "Input the kernel size.\n";
 //	std::cin >> kernel_size;
@@ -101,17 +104,13 @@ int main()
 //
 //int main()
 //{
-//	//処理前画像の入力
 //	cv::Mat src = cv::imread("img/test.png");
-//	cv::Mat org = src.clone();
+//	cv::Mat before_filtering_image = src.clone();
 //
-//	//モザイク処理
-//	mosaicFilter(src);
+//	mosaic_filter(src);
 //
-//	//処理後画像の出力
-//	imshow("result", src);	imshow("original", org);
+//	imshow("result", src);	imshow("original", before_filtering_image);
 //	cv::waitKey(0);
 //
 //	return 0;
 //}
-
