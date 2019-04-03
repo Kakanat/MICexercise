@@ -1,7 +1,16 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <stdio.h>
+#include <cmath>
 #include <array>
+
+//オーバーフローへの対処
+int scaling(int x)
+{
+	if (x >= 255) return 255;
+	else if (x <= 0) return 0;
+	else return x;
+}
 
 void sobel_filter(cv::Mat &src)
 {
@@ -23,9 +32,9 @@ void sobel_filter(cv::Mat &src)
 	{
 		for (int i = 0; i < width; i++)
 		{
-			src.data[i + j * width] += org.data[(i + j * width) * channels + 0] * 0.114; //B
-			src.data[i + j * width] += org.data[(i + j * width) * channels + 1] * 0.587; //G
-			src.data[i + j * width] += org.data[(i + j * width) * channels + 2] * 0.299; //R
+			src.data[i + j * width] += (uchar)(org.data[(i + j * width) * channels + 0] * 0.114); //B
+			src.data[i + j * width] += (uchar)(org.data[(i + j * width) * channels + 1] * 0.587); //G
+			src.data[i + j * width] += (uchar)(org.data[(i + j * width) * channels + 2] * 0.299); //R
 		}
 	}
 
@@ -35,61 +44,76 @@ void sobel_filter(cv::Mat &src)
 	imshow("1 channeled original image (progress)", src);
 	cv::waitKey(0);
 
-}
+	//ゼロパディング画像の用意
+	cv::Mat padded_src = cv::Mat::zeros(cv::Size(width + 2, height + 2), CV_8U);
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			padded_src.data[(i + 1) + (j + 1) * padded_src.cols] = src.data[i + j * width];
+		}
+	}
 
-//	//ゼロパディング（ゼロの用意）
-//	cv::Mat zero_padded_src = cv::Mat::zeros(cv::Size(width + kernel_size - 1, height + kernel_size - 1), CV_8UC3);
-//
-//	//ゼロパディング（元画像をのせる）
-//	for (int c = 0; c < channels; c++) //チャンネル指定
-//	{
-//		for (int b = (kernel_size - 1) / 2; b < height + (kernel_size - 1) / 2; b++) //縦方向
-//		{
-//			for (int a = (kernel_size - 1) / 2; a < width + (kernel_size - 1) / 2; a++) //横方向
-//			{
-//				zero_padded_src.data[(a + b * zero_padded_src.cols) * channels + c] = src.data[((a - (kernel_size - 1) / 2) + (b - (kernel_size - 1) / 2) * width) * channels + c];
-//			}
-//		}
-//	}
-//
-//	//ゼロパディング後画像の複製
-//	cv::Mat zero_padded_org = zero_padded_src.clone();
-//
-//	//フィルタリング実行
-//	for (int c = 0; c < channels; c++) //チャンネル指定
-//	{
-//		for (int b = (kernel_size - 1) / 2; b < height + (kernel_size - 1) / 2; b++) //出力画素の高さ位置指定
-//		{
-//			for (int a = (kernel_size - 1) / 2; a < width + (kernel_size - 1) / 2; a++) //出力画素の幅位置指定
-//			{
-//				//画素値計算
-//				double tmpValue = 0.0;
-//				for (int j = -(kernel_size - 1) / 2; j < (kernel_size + 1) / 2; j++) //ガウシアン計算画素の高さ位置指定
-//				{
-//					for (int i = -(kernel_size - 1) / 2; i < (kernel_size + 1) / 2; i++) //ガウシアン計算画素の幅位置指定
-//					{
-//						//ここから要検討						
-//						tmpValue += zero_padded_org.data[((a + i) + (b + j) * zero_padded_src.cols) * channels + c] * gaussian_kernel[(i + (kernel_size - 1) / 2) + (j + (kernel_size - 1) / 2) * kernel_size];
-//					}
-//				}
-//				zero_padded_src.data[(a + b * zero_padded_src.cols) * channels + c] = tmpValue;
-//			}
-//		}
-//		std::cout << "step " << c + 1 << " is done (total step is " << channels << ").\n";
-//	}
-//
-//	//パディング部分の削除と出力ファイルへの書き出し
-//	for (int c = 0; c < channels; c++) //チャンネル指定
-//	{
-//		for (int b = 0; b < height; b++) //縦方向
-//		{
-//			for (int a = 0; a < width; a++) //横方向
-//			{
-//				src.data[(a + b * width) * channels + c] = zero_padded_src.data[((a + (kernel_size - 1) / 2) + (b + (kernel_size - 1) / 2) * zero_padded_src.cols) * channels + c];
-//			}
-//		}
-//	}
-//}
+	//縦方向フィルタ適用
+	cv::Mat vertical_filtered = cv::Mat::zeros(cv::Size(width, height), CV_8U);
+	for (int b = 0; b < height; b++) //出力画素の高さ位置指定
+	{
+		for (int a = 0; a < width; a++) //出力画素の幅位置指定
+		{
+			//画素値計算
+			int tmpValue = 0;
+			for (int j = 0; j <= 2; j++) //フィルタ計算画素の高さ位置指定
+			{
+				for (int i = 0; i <= 2; i++) //フィルタ計算画素の幅位置指定
+				{
+					tmpValue += padded_src.data[(a + i) + (b + j) * padded_src.cols] * vertical_difference_arr[i + j * 3];
+				}
+			}
+			tmpValue = scaling(tmpValue);
+			vertical_filtered.data[a + b * width] = tmpValue;
+		}
+	}
+
+	//縦方向フィルタ適用画像の表示
+	imshow("vertical filtered image (progress)", vertical_filtered);
+	cv::waitKey(0);
+
+	//横方向フィルタ適用
+	cv::Mat horisontal_filtered = cv::Mat::zeros(cv::Size(width, height), CV_8U);
+	for (int b = 0; b < height; b++) //出力画素の高さ位置指定
+	{
+		for (int a = 0; a < width; a++) //出力画素の幅位置指定
+		{
+			//画素値計算
+			int tmpValue = 0;
+			for (int j = 0; j <= 2; j++) //フィルタ計算画素の高さ位置指定
+			{
+				for (int i = 0; i <= 2; i++) //フィルタ計算画素の幅位置指定
+				{
+					tmpValue += padded_src.data[(a + i) + (b + j) * padded_src.cols] * horisontal_difference_arr[i + j * 3];
+				}
+			}
+			tmpValue = scaling(tmpValue);
+			horisontal_filtered.data[a + b * width] = tmpValue;
+		}
+	}
+
+	//横方向フィルタ適用画像の表示
+	imshow("horisontal filtered image (progress)", horisontal_filtered);
+	cv::waitKey(0);
+
+	//縦横方向の統合
+	for (int b = 0; b < height; b++) //出力画素の高さ位置指定
+	{
+		for (int a = 0; a < width; a++) //出力画素の幅位置指定
+		{
+			int tmpValue = 0;
+			tmpValue = (int)sqrt(vertical_filtered.data[a + b * width] * vertical_filtered.data[a + b * width] + horisontal_filtered.data[a + b * width] * horisontal_filtered.data[a + b * width]);
+			tmpValue = scaling(tmpValue);
+			src.data[a + b * width] = tmpValue;
+		}
+	}
+}
 
 int main()
 {
