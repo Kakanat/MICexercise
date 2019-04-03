@@ -43,9 +43,9 @@ void mosaic_filter(cv::Mat &src)
 	}
 }
 
-int main()
+int main(int argc, char*argv[])
 {
-	cv::Mat src = cv::imread("img/test.png");
+	cv::Mat src = cv::imread(argv[1]);
 	cv::Mat before_filtering_image = src.clone();
 		
 	mosaic_filter(src);
