@@ -1,6 +1,4 @@
 #include <opencv2/opencv.hpp>
-#include <iostream>
-#include <stdio.h>
 
 cv::Mat src = cv::imread("img/test.png"); //ì«Ç›çûÇ›
 cv::Mat org = src.clone();

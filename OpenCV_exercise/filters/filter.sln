@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "median filter", "median fil
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sobel filter", "sobel filter\sobel filter.vcxproj", "{A1166A23-3786-4145-952E-DAF87CA1FC31}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hue inversion", "hue inversion\hue inversion.vcxproj", "{E6B2A966-8973-4F58-AEE2-933745FABFCF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +63,14 @@ Global
 		{A1166A23-3786-4145-952E-DAF87CA1FC31}.Release|x64.Build.0 = Release|x64
 		{A1166A23-3786-4145-952E-DAF87CA1FC31}.Release|x86.ActiveCfg = Release|Win32
 		{A1166A23-3786-4145-952E-DAF87CA1FC31}.Release|x86.Build.0 = Release|Win32
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Debug|x64.ActiveCfg = Debug|x64
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Debug|x64.Build.0 = Debug|x64
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Debug|x86.ActiveCfg = Debug|Win32
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Debug|x86.Build.0 = Debug|Win32
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Release|x64.ActiveCfg = Release|x64
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Release|x64.Build.0 = Release|x64
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Release|x86.ActiveCfg = Release|Win32
+		{E6B2A966-8973-4F58-AEE2-933745FABFCF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
