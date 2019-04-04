@@ -124,7 +124,7 @@ int main()
 	sobel_filter(src);
 
 	//o—Í‚Æ”äŠr
-	imshow("result", src);
+	cv::imshow("result", src);
 	cv::waitKey(0);
 
 	return 0;
