@@ -1,18 +1,35 @@
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 
-void templateMatching(cv::Mat src, cv::Mat tmp)
+bool compare(const std::pair<int, double>&i, const std::pair<int, double>&j)
 {
+	return i.second < j.second;
+}
+
+int getRowPosition(int total, int i)
+{
+	int step = 0;
+	while (total > i)
+	{
+		total = total - i;
+		step++;
+	}
+	return step;
+}
+
+void templateMatching(cv::Mat &src, cv::Mat &tmp)
+{
+	std::cout << "Now searching...\n";
+
 	//複製
 	cv::Mat org_src = src.clone();
 	cv::Mat org_tmp = tmp.clone();
 
-	double mean_of_src = 0.0;
-	double mean_of_tmp = 0.0;
-
 	//入力画像の１チャンネル化
 	src = cv::Mat::zeros(cv::Size(src.cols, src.rows), CV_8U);
+	double mean_of_src = 0.0;
 	for (int j = 0; j < src.rows; j++)
 	{
 		uchar *pointer_of_src = src.ptr<uchar>(j);
@@ -25,9 +42,10 @@ void templateMatching(cv::Mat src, cv::Mat tmp)
 			mean_of_src += pointer_of_src[i] / (src.cols * src.rows);
 		}
 	}
-	
+
 	//テンプレートの１チャンネル化
 	tmp = cv::Mat::zeros(cv::Size(tmp.cols, tmp.rows), CV_8U);
+	double mean_of_tmp = 0.0;
 	for (int j = 0; j < tmp.rows; j++)
 	{
 		uchar *pointer_of_tmp = tmp.ptr<uchar>(j);
@@ -41,15 +59,16 @@ void templateMatching(cv::Mat src, cv::Mat tmp)
 		}
 	}
 
-	std::vector<double> normalizedCrossCorrelationVec; //目的位置の検索に使用するベクター
-	std::vector<double> positionVec; //目的位置の検索に使用するベクター
-	std::vector<std::pair<int, double>> NCCandPositionVec;
+	std::vector<std::pair<int, double>> NCCandPositionVec; //位置と正規化相関係数のペア
 
-	for (int b = 0; b <= src.rows - tmp.rows; b++) //変更画素の高さ指定
+	int t = 1;
+	int process = 0;
+	for (int b = 0; b <= src.rows - tmp.rows; b++)
 	{
-		for (int a = 0; a <= src.cols - tmp.rows; a++) //変更画素の幅指定
+		
+		for (int a = 0; a <= src.cols - tmp.rows; a++)
 		{
-			//正規化相互相関係数の計算
+			//位置ごとの正規化相互相関係数の計算
 			double numerator = 0.0;
 			double denominator_src = 0.0;
 			double denominator_tmp = 0.0;
@@ -65,22 +84,47 @@ void templateMatching(cv::Mat src, cv::Mat tmp)
 				}
 			}
 			double normalizedCrossCorrelation = numerator / (sqrt(denominator_src) * sqrt(denominator_tmp));
-			NCCandPositionVec.emplace_back(a + b * src.cols, normalizedCrossCorrelation);
+			NCCandPositionVec.emplace_back(a + b * (src.cols - tmp.cols + 1), normalizedCrossCorrelation);
+		}
+		process++;
+		if (t * (src.rows - tmp.rows) - 1 < process * 10 && t * (src.rows - tmp.rows) < process * 10)
+		{
+			std::cout << t * 10 << "% finished...\n";
+			t++;
 		}
 	}
 
+	std::sort(NCCandPositionVec.begin(), NCCandPositionVec.end(), compare);
+	std::pair<int, double> target_pair = NCCandPositionVec.back();
+	int ansPosition = target_pair.first;
+	int startPositionOfRow = getRowPosition(ansPosition, src.cols - tmp.cols + 1);
+	int startPositionOfCol = target_pair.first - startPositionOfRow * (src.cols - tmp.cols + 1);
+
+	src = org_src.clone();
+	for (int j = startPositionOfRow; j < startPositionOfRow + org_tmp.rows; j++)
+	{
+		cv::Vec3b *pointer_of_src = src.ptr<cv::Vec3b>(j);
+		for (int i = startPositionOfCol; i < startPositionOfCol + org_tmp.cols; i++)
+		{
+			pointer_of_src[i][0] = 255 - pointer_of_src[i][0];
+			pointer_of_src[i][1] = 255 - pointer_of_src[i][1];
+			pointer_of_src[i][2] = 255 - pointer_of_src[i][2];
+		}
+	}
 }
 
-int main(int argc1, char*argv1[], int argc2, char*argv2[])
+int main(int argc, char*argv[])
 {
-	cv::Mat src = cv::imread(argv1[1]);
-	cv::Mat tmp = cv::imread(argv2[1]);
+	cv::Mat src = cv::imread(argv[1]);
+	cv::Mat tmp = cv::imread(argv[2]);
 	cv::Mat before_filtering_image = src.clone();
+	cv::Mat tmp_org = tmp.clone();
+	imshow("original", before_filtering_image);
+	imshow("template", tmp_org);
+	cv::waitKey(0);
 
 	templateMatching(src, tmp);
 
-	imshow("original", before_filtering_image);
-	cv::waitKey(0);
 	imshow("result", src);
 	cv::waitKey(0);
 
